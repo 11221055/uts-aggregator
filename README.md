@@ -4,42 +4,57 @@ Proyek ini mengimplementasikan Publish–Subscribe Event Aggregator menggunakan 
 Seluruh komponen berjalan di dalam Docker container, serta mendukung eksekusi lokal tanpa Docker.
 
 ## Fitur
-* Publish / Subscribe Model
-  -Endpoint POST /publish menerima satu atau beberapa event dalam format JSON, yang kemudian     diproses oleh asynchronous worker.
 
-* Deduplication & Idempotency
-  -Event diidentifikasi unik dengan pasangan (topic, event_id)
-  -Duplikat tidak diproses ulang, bahkan setelah restart karena disimpan di SQLite
+- **Publish / Subscribe Pattern**
+  - Endpoint `POST /publish` menerima satu atau beberapa event dalam format JSON.
+  - Worker async memproses event di background menggunakan `asyncio.Queue`.
 
-* Monitoring & Statistik
-  -GET /events?topic=... → daftar event unik yang sudah diterima
-  -GET /stats → menampilkan:
-  -total event diterima
-  -jumlah unik yang diproses
-  -duplikat yang terdeteksi
-  -daftar topik aktif
-  -uptime server
+- **Deduplication & Idempotency**
+  - Event dikenali secara unik oleh `(topic, event_id)`.
+  - Duplikat tidak akan diproses ulang, bahkan setelah restart container (persisten di SQLite).
 
-## Teknologi yang Digunakan
-## Komponen ## Teknologi
-Bahasa      Python 3.11
-Framework	  FastAPI
-Database	  SQLite
-Runtime	    AsyncIO
-Container	  Docker & Docker Compose
+- **Monitoring & Statistik**
+  - `GET /events?topic=...` → menampilkan event unik per topik.  
+  - `GET /stats` → menampilkan metrik sistem, seperti:
+    - total event diterima  
+    - jumlah event unik diproses  
+    - duplikasi yang di-drop  
+    - daftar topik aktif  
+    - uptime aplikasi  
 
-## Build & Run (Docker Compose)
-* clone repo
-  ```bash
-  
-* build dan jalankan container
-  docker compose build --no-cache
-  docker compose up -d aggregator
-  docker compose run --rm publisher python -m src.publisher
+---
 
-*cek statistik
-  curl http://localhost:8080/stats
-  ```
+## teknologi yang dipakai
+
+| Komponen | Teknologi |
+|----------|------------|
+| Bahasa Pemrograman | Python 3.11 |
+| Framework | FastAPI |
+| Database | SQLite |
+| Runtime | AsyncIO |
+| Container | Docker + Docker Compose |
+
+Dependensi tambahan dapat dilihat di **requirements.txt**.
+
+---
+
+## Menjalankan dengan Docker Compose
+
+1. Clone repository
+   ```bash
+   git clone https://github.com/<username>/uts-aggregator.git
+   cd uts-aggregator
+   ```
+2. Build dan jalankan container
+   ```bash
+   docker compose build --no-cache
+   docker compose up -d aggregator
+   docker compose run --rm publisher python -m src.publisher
+   ```
+3. Periksa statistik
+   ```bash
+   curl http://localhost:8080/stats
+   ```
 
 ### Konfigurasi
 - `AGGREGATOR_URL` (default `http://aggregator:8080/publish`)
