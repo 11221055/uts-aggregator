@@ -108,4 +108,4 @@ Write-Host "=== Sesudah ==="
 - Ordering **best-effort per-topic** (timestamp) — tidak memaksakan total ordering
 
 ## Link demo
-
+https://youtu.be/uq6npi3XvxA
