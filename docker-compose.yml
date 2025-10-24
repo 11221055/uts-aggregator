@@ -1,0 +1,31 @@
+services:
+  aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["python", "-m", "src.main"]
+    ports:
+      - "8081:8080"
+    networks:
+      - uts_network
+    restart: unless-stopped
+    volumes:
+      - appdata:/app/data   # simpan DB di volume
+
+  publisher:
+    build:
+      context: .
+    command: ["python", "-m", "src.publisher"]
+    depends_on:
+      - aggregator
+    networks:
+      - uts_network
+    environment:
+      - AGGREGATOR_URL=http://aggregator:8080/publish
+
+networks:
+  uts_network:
+    driver: bridge
+
+volumes:
+  appdata:
