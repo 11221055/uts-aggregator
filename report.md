@@ -1,5 +1,7 @@
 Nama : Ananda Dihan Naufal
+
 NIM  : 11221055
+
 Matkul : Sistem Terdistribusi
 
 
@@ -101,3 +103,4 @@ Keterkaitan antara metrik dan desain sangat erat: penggunaan batch besar meningk
 ## Daftar Pustaka
 
 Tanenbaum, A. S., & Van Steen, M. (2007). *Distributed Systems: Principles and Paradigms* (2nd ed.). Pearson Education.
+
