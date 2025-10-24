@@ -1,20 +1,96 @@
-# UTS Aggregator
+# UTS Sistem Terdistribusi — Pub-Sub Log Aggregator
 
-## Build
-docker build -t uts-aggregator .
+Proyek ini mengimplementasikan Publish–Subscribe Event Aggregator menggunakan FastAPI + asyncio, dengan fokus pada idempotent consumer, deduplication, dan persistensi event.
+Seluruh komponen berjalan di dalam Docker container, serta mendukung eksekusi lokal tanpa Docker.
 
-## Run
-docker run --rm -p 8080:8080 uts-aggregator
+## Fitur
+* Publish / Subscribe Model
+  -Endpoint POST /publish menerima satu atau beberapa event dalam format JSON, yang kemudian     diproses oleh asynchronous worker.
 
-## Endpoints
-POST /publish
-GET  /events?topic=...
-GET  /stats
+* Deduplication & Idempotency
+  -Event diidentifikasi unik dengan pasangan (topic, event_id)
+  -Duplikat tidak diproses ulang, bahkan setelah restart karena disimpan di SQLite
 
-## Run tests (locally, not in container)
-pip install -r requirements.txt
-pytest -q
+* Monitoring & Statistik
+  -GET /events?topic=... → daftar event unik yang sudah diterima
+  -GET /stats → menampilkan:
+  -total event diterima
+  -jumlah unik yang diproses
+  -duplikat yang terdeteksi
+  -daftar topik aktif
+  -uptime server
 
-## Stress test
-# Ensure service running at localhost:8080
-python3 stress/stress_test.py
+## Teknologi yang Digunakan
+## Komponen ## Teknologi
+Bahasa      Python 3.11
+Framework	  FastAPI
+Database	  SQLite
+Runtime	    AsyncIO
+Container	  Docker & Docker Compose
+
+## Build & Run (Docker Compose)
+* clone repo
+  ```bash
+  
+* build dan jalankan container
+  docker compose build --no-cache
+  docker compose up -d aggregator
+  docker compose run --rm publisher python -m src.publisher
+
+*cek statistik
+  curl http://localhost:8080/stats
+  ```
+
+### Konfigurasi
+- `AGGREGATOR_URL` (default `http://aggregator:8080/publish`)
+- (Disarankan) `DEDUP_DB_PATH` agar mudah dikontrol saat testing, default `data/dedup.db`
+
+## Struktur Repo (ringkas)
+```
+src/
+  main.py           # FastAPI app + workers + endpoints
+  consumer.py       # worker logic (idempotent)
+  publisher.py      # generator + pengirim batch (>=20% dup)
+  dedup_store.py    # SQLite-based durable dedup store
+tests/
+  test_app.py
+  test_persist_and_stress.py   # (ditambahkan)
+Dockerfile
+docker-compose.yml
+requirements.txt
+README.md
+report.md
+```
+
+## Unit Test
+Jalankan:
+```bash
+pytest -v
+```
+
+Cakupan utama:
+- Validasi skema (422 jika salah)
+- Idempotency (duplikat tidak diproses)
+- Persistensi dedup (tetap efektif setelah restart)
+- Konsistensi `/stats` dan `/events`
+- **Stress mini** ≥5000 event dengan ≥20% duplikat
+
+## Demo Cepat (PowerShell)
+```powershell
+Write-Host "=== Sebelum ==="
+(Invoke-RestMethod -Uri "http://localhost:8080/stats") | ConvertTo-Json -Depth 5
+
+docker compose run --rm publisher python -m src.publisher
+
+Write-Host "=== Sesudah ==="
+(Invoke-RestMethod -Uri "http://localhost:8080/stats") | ConvertTo-Json -Depth 5
+```
+
+## Catatan Desain
+- *At-least-once delivery* di publisher dengan duplikasi terkontrol
+- Consumer idempotent via kunci `(topic,event_id)`
+- Dedup store **SQLite** pada named volume (`appdata:/app/data`)
+- Ordering **best-effort per-topic** (timestamp) — tidak memaksakan total ordering
+
+## Link demo
+
